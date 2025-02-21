@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  orchestrator-agent:
+    build: ./orchestrator-agent
+    ports:
+      - "8001:8000"
+    environment:
+      - DATA_INGESTOR_URL=http://data-ingestor-agent:8000
+      - SUMMARIZATION_URL=http://summarization-agent:8000
+      - SENTIMENT_URL=http://sentiment-agent:8000
+      - SEMANTIC_SEARCH_URL=http://semantic-search-agent:8000
+      - QA_URL=http://qa-agent:8000
+      - ANALYTICS_URL=http://analytics-agent:8000
+    depends_on:
+      - data-ingestor-agent
+      - summarization-agent
+      - sentiment-agent
+      - semantic-search-agent
+      - qa-agent
+      - analytics-agent
+
+  data-ingestor-agent:
+    build: ./data-ingestor-agent
+    ports:
+      - "8010:8000"
+
+  semantic-search-agent:
+    build: ./semantic-search-agent
+    ports:
+      - "8020:8000"
+
+  sentiment-agent:
+    build: ./sentiment-agent
+    ports:
+      - "8030:8000"
+
+  summarization-agent:
+    build: ./summarization-agent
+    ports:
+      - "8040:8000"
+
+  qa-agent:
+    build: ./qa-agent
+    ports:
+      - "8050:8000"
+
+  analytics-agent:
+    build: ./analytics-agent
+    ports:
+      - "8060:8000"
