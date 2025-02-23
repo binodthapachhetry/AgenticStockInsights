@@ -5,7 +5,7 @@ import os
 app = FastAPI()
 
 # You might store URLs or Pub/Sub topics for each agent as environment variables
-DATA_INGESTOR_URL = os.environ.get("DATA_INGESTOR_URL", "http://data-ingestor:8000")
+DATA_INGESTOR_URL = os.environ.get("DATA_INGESTOR_URL", "http://data-ingestor-agent:8000")
 SUMMARIZATION_URL = os.environ.get("SUMMARIZATION_URL", "http://summarization-agent:8000")
 SENTIMENT_URL = os.environ.get("SENTIMENT_URL", "http://sentiment-agent:8000")
 SEARCH_URL = os.environ.get("SEARCH_URL", "http://semantic-search-agent:8000")
