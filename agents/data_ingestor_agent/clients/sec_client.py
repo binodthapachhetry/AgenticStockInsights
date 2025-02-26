@@ -33,26 +33,35 @@
 
 import requests
 import os
-import json                                                                                                                               
-from tenacity import retry, wait_exponential, stop_after_attempt                                                                                        
+import json    
+import time                                                                                                                           
+from tenacity import retry, retry_if_exception_type, wait_exponential, stop_after_attempt                                                                                        
                                                                                                                                                       
 class SECClient:                                                                                                                                        
      def __init__(self, api_key: str):  
           self.ticker_cik_map = {}  # Initialize empty map                                                                                                
           self._refresh_cik_mapping()  # Load initial data 
           # self.ticker_cik_map = self._load_cik_mapping()                                                                                                                 
-          self.base_url = "https://api.sec.gov"                                                                                                           
+          self.base_url = "https://data.sec.gov"  
+
           self.session = requests.Session()                                                                                                               
           self.session.headers.update({                                                                                                                   
-               "User-Agent": "EducationalPurpose thapachhetry.binod@gmail.com",                                                                                        
+               "User-Agent": "EducationalPurpose thapachhetry.binod@gmail.com",   
+               "Accept-Encoding": "gzip, deflate",                                                                                     
                "Authorization": f"Bearer {api_key}"                                                                                                        
           })                                                                                                                                              
                                                                                                                                                            
-     @retry(wait=wait_exponential(multiplier=1), stop=stop_after_attempt(3))                                                                             
+     @retry(                                                                                                                                                 
+               wait=wait_exponential(multiplier=1),                                                                                                                
+               stop=stop_after_attempt(3),                                                                                                                         
+               retry=retry_if_exception_type((requests.exceptions.RequestException,)),  # Only retry on network errors                                             
+               reraise=True  # Re-raise original error after retries                                                                                               
+     )                                                                            
      def get_company_filings(self, ticker: str):                                                                                                         
           """Get latest 10-K filings for a company"""                                                                                                     
           cik = self._get_cik(ticker)                                                                                                                     
-          url = f"{self.base_url}/submissions/CIK{cik}.json"                                                                                              
+          url = f"{self.base_url}/submissions/CIK{cik}.json"  
+          print("URL:", url)      
           response = self.session.get(url)                                                                                                                
           response.raise_for_status()                                                                                                                     
           return self._filter_10k_filings(response.json())                                                                                                
@@ -92,21 +101,28 @@ class SECClient:
           # raise ValueError(f"CIK not found for ticker: {ticker}")   
 
      def _refresh_cik_mapping(self):  # Was previously _load_cik_mapping                                                                                 
-          try:                                                                                                                                            
-               response = requests.get("https://www.sec.gov/files/company_tickers.json")                                                                   
-               response.raise_for_status()                                                                                                                 
-               companies = response.json()                                                                                                                 
+          try: 
+               time.sleep(10)                                                                                                                                             
+               print("Attempting SEC API call...")                                                                                                             
+               response = self.session.get("https://www.sec.gov/files/company_tickers.json")                                                                       
+               response.raise_for_status()                                                                                                                     
+               print(f"API Status: {response.status_code}")                                                                                                    
+                                                                                                                                                                
+               companies = response.json()                                                                                                                     
+               print(f"Received {len(companies)} companies")                                                                                                   
+                                                                                                                                                                
+               self.ticker_cik_map = {                                                                                                                         
+                    company["ticker"]: str(company["cik_str"]).zfill(10)                                                                                        
+                    for company in companies.values()                                                                                                           
+               }                                                                                                                                               
+               print(f"Mapped {len(self.ticker_cik_map)} tickers")                                                                                             
+                                                                                                                                                                
+               with open("cik_cache.json", "w") as f:                                                                                                          
+                    json.dump(self.ticker_cik_map, f)                                                                                                           
+               print("Cache updated successfully")                                                                                                             
                                                                                                                                                            
-               self.ticker_cik_map = {                                                                                                                     
-                    company["ticker"]: str(company["cik_str"]).zfill(10)                                                                                    
-                    for company in companies.values()                                                                                                       
-               }                                                                                                                                           
-                                                                                                                                                           
-               # Save to cache                                                                                                                             
-               with open("cik_cache.json", "w") as f:                                                                                                      
-                    json.dump(self.ticker_cik_map, f)                                                                                                       
-                                                                                                                                                           
-          except Exception as e:                                                                                                                          
+          except Exception as e:                                                                                                                              
+               print(f"Refresh failed: {str(e)}")                                                                                                               
                # Fallback to local cache if available                                                                                                      
                if os.path.exists("cik_cache.json"):                                                                                                        
                     with open("cik_cache.json") as f:                                                                                                       
