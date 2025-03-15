@@ -156,6 +156,57 @@ This implementation has limitations in scalability, reliability, and advanced an
    - Use Cloud CDN for content delivery
    - Consider multi-region deployment for critical services
 
+## Integration of Existing AI Agents
+
+The current codebase includes several microservices implemented as AI agents that will be integrated into the proposed architecture:
+
+### 1. Data Ingestor Agent
+This agent aligns with the **Data Collection Layer**:
+- Currently fetches data from SEC filings and Yahoo Finance
+- Includes monitoring metrics and error handling
+- Will be enhanced to work with Cloud Scheduler for twice-daily data collection
+- PubSubManager will be adapted to use Google Cloud Pub/Sub
+
+**Enhancements needed:**
+- Integration with Cloud Scheduler for pre-market and post-market collection
+- Storing raw data in Cloud Storage
+- Adapting the Kafka producer to use Google Cloud Pub/Sub
+
+### 2. Analytics Agent
+This fits into the **Processing Layer**:
+- Provides endpoints for financial analysis like stock sentiment correlations
+- Will be expanded to include more sophisticated financial metrics
+
+**Enhancements needed:**
+- Integration with BigQuery for historical analysis
+- Adding more financial metrics and indicators
+- Implementing caching for frequently requested analytics
+
+### 3. Orchestrator Agent
+This serves as a central coordination component that bridges multiple layers:
+- Coordinates workflows between other agents
+- Has endpoints for processing documents and handling questions
+
+**Enhancements needed:**
+- Integration with Cloud Endpoints
+- Enhanced error handling and circuit breaking
+- Workflow management for the scheduled data collection processes
+
+### 4. Other Specialized Agents
+Other agents (Sentiment, Summarization, QA, Semantic Search) fit into the **Processing Layer**:
+- **Sentiment Agent**: Analyzes sentiment in financial news and reports
+- **Summarization Agent**: Creates concise summaries of lengthy financial documents
+- **QA Agent**: Provides natural language question answering capabilities
+- **Semantic Search Agent**: Enables content discovery across financial documents
+
+**Migration Strategy:**
+1. **Lift and Shift**: Deploy existing agents to Cloud Run with minimal changes
+2. **Enhance and Integrate**: Gradually replace components with GCP-native alternatives
+3. **Extend Functionality**: Add the scheduled collection and additional analytics
+4. **Connect Frontend**: Develop and connect the web interface
+
+The existing microservices provide an excellent foundation for the system. The modular design allows for incremental migration to the GCP architecture while maintaining functionality throughout the process.
+
 ## Conclusion
 
 This architecture provides a robust, scalable foundation for the Stock Insights application using Google Cloud Platform services. The design emphasizes reliability, scalability, and advanced analytics capabilities while maintaining cost efficiency.
