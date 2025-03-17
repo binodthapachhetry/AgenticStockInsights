@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Histogram, Gauge, Summary
 import time
 from functools import wraps
 
@@ -21,6 +21,25 @@ CIRCUIT_STATE = Gauge(
     ['service']
 )
 
+# New metrics
+DATA_SIZE = Summary(
+    'data_ingestor_data_size_bytes',
+    'Size of ingested data in bytes',
+    ['source', 'data_type']
+)
+
+INGEST_COUNT = Counter(
+    'data_ingestor_ingest_operations_total',
+    'Total number of data ingestion operations',
+    ['source', 'status']
+)
+
+DEPENDENCY_UP = Gauge(
+    'data_ingestor_dependency_up',
+    'Indicates if a dependency is available (1) or not (0)',
+    ['dependency']
+)
+
 # Decorator for metrics
 def track_metrics(source: str):
     """
@@ -28,7 +47,42 @@ def track_metrics(source: str):
     """
     def decorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        async def async_wrapper(*args, **kwargs):
+            endpoint = func.__name__
+            start_time = time.time()
+            
+            try:
+                result = await func(*args, **kwargs)
+                REQUEST_COUNT.labels(
+                    endpoint=endpoint,
+                    status="success",
+                    source=source
+                ).inc()
+                INGEST_COUNT.labels(source=source, status="success").inc()
+                
+                # Track data size if result has a size attribute or is a dict/list
+                if hasattr(result, 'size'):
+                    DATA_SIZE.labels(source=source, data_type=type(result).__name__).observe(result.size)
+                elif isinstance(result, (dict, list)):
+                    DATA_SIZE.labels(source=source, data_type=type(result).__name__).observe(len(str(result)))
+                
+                return result
+            except Exception as e:
+                REQUEST_COUNT.labels(
+                    endpoint=endpoint,
+                    status="error",
+                    source=source
+                ).inc()
+                INGEST_COUNT.labels(source=source, status="error").inc()
+                raise e
+            finally:
+                REQUEST_LATENCY.labels(
+                    endpoint=endpoint,
+                    source=source
+                ).observe(time.time() - start_time)
+        
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs):
             endpoint = func.__name__
             start_time = time.time()
             
@@ -39,6 +93,14 @@ def track_metrics(source: str):
                     status="success",
                     source=source
                 ).inc()
+                INGEST_COUNT.labels(source=source, status="success").inc()
+                
+                # Track data size if result has a size attribute or is a dict/list
+                if hasattr(result, 'size'):
+                    DATA_SIZE.labels(source=source, data_type=type(result).__name__).observe(result.size)
+                elif isinstance(result, (dict, list)):
+                    DATA_SIZE.labels(source=source, data_type=type(result).__name__).observe(len(str(result)))
+                
                 return result
             except Exception as e:
                 REQUEST_COUNT.labels(
@@ -46,12 +108,20 @@ def track_metrics(source: str):
                     status="error",
                     source=source
                 ).inc()
+                INGEST_COUNT.labels(source=source, status="error").inc()
                 raise e
             finally:
                 REQUEST_LATENCY.labels(
                     endpoint=endpoint,
                     source=source
                 ).observe(time.time() - start_time)
-                
-        return wrapper
+        
+        # Choose the appropriate wrapper based on whether the function is async or not
+        if asyncio.iscoroutinefunction(func):
+            return async_wrapper
+        return sync_wrapper
+    
     return decorator
+
+# Import asyncio at the top to avoid reference errors
+import asyncio
