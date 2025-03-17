@@ -1,37 +1,57 @@
-from prometheus_client import Counter, Histogram, Gauge                                                                                                 
-                                                                                                                                                         
- # Metrics definitions                                                                                                                                   
-INGEST_REQUESTS = Counter(                                                                                                                              
-     'ingestor_requests_total',                                                                                                                          
-     'Total data ingestion requests',                                                                                                                    
-     ['source', 'status']                                                                                                                                
- )                                                                                                                                                       
-                                                                                                                                                         
-PROCESSING_TIME = Histogram(                                                                                                                            
-     'ingestor_processing_seconds',                                                                                                                      
-     'Data processing latency',                                                                                                                          
-     ['pipeline']                                                                                                                                        
- )                                                                                                                                                       
-                                                                                                                                                         
-CIRCUIT_STATE = Gauge(                                                                                                                                  
-     'circuit_breaker_state',                                                                                                                            
-     'State of circuit breakers',                                                                                                                        
-     ['service']                                                                                                                                         
- )                                                                                                                                                       
-                                                                                                                                                         
- # Decorator for metrics                                                                                                                                 
-def track_metrics(source: str):                                                                                                                         
-    def decorator(func):                                                                                                                                
-        async def wrapper(*args, **kwargs):                                                                                                             
-            start_time = time.time()                                                                                                                    
-            try:                                                                                                                                        
-                result = await func(*args, **kwargs)                                                                                                    
-                INGEST_REQUESTS.labels(source=source, status="success").inc()                                                                           
-                return result                                                                                                                           
-            except Exception as e:                                                                                                                      
-                INGEST_REQUESTS.labels(source=source, status="failed").inc()                                                                            
-                raise                                                                                                                                   
-            finally:                                                                                                                                    
-                PROCESSING_TIME.labels(pipeline=func.__name__).observe(time.time() - start_time)                                                        
-        return wrapper                                                                                                                                  
-    return decorator 
+from prometheus_client import Counter, Histogram, Gauge
+import time
+from functools import wraps
+
+# Metrics definitions
+REQUEST_COUNT = Counter(
+    'data_ingestor_requests_total',
+    'Total number of requests by endpoint and status',
+    ['endpoint', 'status', 'source']
+)
+
+REQUEST_LATENCY = Histogram(
+    'data_ingestor_request_latency_seconds',
+    'Request latency in seconds',
+    ['endpoint', 'source']
+)
+
+CIRCUIT_STATE = Gauge(
+    'data_ingestor_circuit_state',
+    'Circuit breaker state (0=closed, 1=open, 2=half-open)',
+    ['service']
+)
+
+# Decorator for metrics
+def track_metrics(source: str):
+    """
+    Decorator to track metrics for an endpoint
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            endpoint = func.__name__
+            start_time = time.time()
+            
+            try:
+                result = func(*args, **kwargs)
+                REQUEST_COUNT.labels(
+                    endpoint=endpoint,
+                    status="success",
+                    source=source
+                ).inc()
+                return result
+            except Exception as e:
+                REQUEST_COUNT.labels(
+                    endpoint=endpoint,
+                    status="error",
+                    source=source
+                ).inc()
+                raise e
+            finally:
+                REQUEST_LATENCY.labels(
+                    endpoint=endpoint,
+                    source=source
+                ).observe(time.time() - start_time)
+                
+        return wrapper
+    return decorator
