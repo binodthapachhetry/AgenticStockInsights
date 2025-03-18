@@ -19,6 +19,31 @@ interface SentimentAnalysisProps {
   data: any;
 }
 
+// Add these new interfaces                                                                                                                                 
+interface SentimentSource {                                                                                                                                 
+  name: string;                                                                                                                                             
+  positive: number;                                                                                                                                         
+  negative: number;                                                                                                                                         
+  neutral: number;                                                                                                                                          
+}                                                                                                                                                           
+                                                                                                                                                            
+interface SentimentKeyword {                                                                                                                                
+  word: string;                                                                                                                                             
+  sentiment: string;                                                                                                                                        
+  count: number;                                                                                                                                            
+}                                                                                                                                                           
+                                                                                                                                                            
+interface SentimentData {                                                                                                                                   
+  overall: {                                                                                                                                                
+    positive: number;                                                                                                                                       
+    negative: number;                                                                                                                                       
+    neutral: number;                                                                                                                                        
+  };                                                                                                                                                        
+  sources: SentimentSource[];                                                                                                                               
+  keywords: SentimentKeyword[];                                                                                                                             
+} 
+
+
 // For MVP, we'll use mock data if real data isn't available
 const generateMockSentimentData = () => {
   return {
@@ -85,7 +110,7 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ data }) => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+                <Tooltip formatter={(value) => `${value.toString}%`} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -94,7 +119,7 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ data }) => {
         
         <Grid item xs={12} md={6}>
           <Typography variant="h6" gutterBottom>Sentiment by Source</Typography>
-          {sentimentData.sources.map((source, index) => (
+          {sentimentData.sources.map((source: SentimentSource, index: number) => (
             <Box key={index} sx={{ mb: 2 }}>
               <Typography variant="body2" gutterBottom>{source.name}</Typography>
               <Grid container spacing={1} alignItems="center">
@@ -147,7 +172,7 @@ const SentimentAnalysis: React.FC<SentimentAnalysisProps> = ({ data }) => {
         <Grid item xs={12}>
           <Typography variant="h6" gutterBottom>Key Topics</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {sentimentData.keywords.map((keyword, index) => (
+            {sentimentData.keywords.map((keyword: SentimentKeyword, index: number) => (
               <Chip 
                 key={index}
                 label={`${keyword.word} (${keyword.count})`}
