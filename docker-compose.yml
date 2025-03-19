@@ -1,7 +1,6 @@
-version: "3.8"
 services:
   orchestrator-agent:
-    build: agents/orchestrator-agent
+    build: agents/orchestrator_agent
     ports:
       - "8001:8000"
     environment:
@@ -54,26 +53,26 @@ services:
        - "9092:9092"    
 
   semantic-search-agent:
-    build: agents/semantic-search-agent
+    build: agents/semantic_search_agent
     ports:
       - "8020:8000"
 
   sentiment-agent:
-    build: agents/sentiment-agent
+    build: agents/sentiment_agent
     ports:
       - "8030:8000"
 
   summarization-agent:
-    build: agents/summarization-agent
+    build: agents/summarization_agent
     ports:
       - "8040:8000"
 
   qa-agent:
-    build: agents/qa-agent
+    build: agents/qa_agent
     ports:
       - "8050:8000"
 
   analytics-agent:
-    build: agents/analytics-agent
+    build: agents/analytics_agent
     ports:
       - "8060:8000"
