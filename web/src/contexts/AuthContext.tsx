@@ -50,8 +50,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     try {                                                                                                                                                     
       // Check if email is in the approved list                                                                                                               
       const approved = await isEmailApproved(email);                                                                                                          
-      if (!approved) {                                                                                                                                        
-        throw new Error('This email is not authorized to create an account');                                                                                 
+      if (!approved) {       
+        console.log('This email is not authorized to create an account')                                                                                                                                  
+        throw new Error('This email is not authorized to create an account');   
       }                                                                                                                                                       
       console.log(email, " is authorized to create an account.")                                                                                                                                                       
       // Proceed with signup                                                                                                                                  
