@@ -25,8 +25,7 @@ services:
     ports:                                                                                                                                              
        - "8010:8000"                                                                                                                                     
     environment:                                                                                                                                        
-       - KAFKA_BROKERS=kafka:9092                                                                                                                        
-       - SEC_API_KEY=${SEC_API_KEY}                                                                                                                      
+       - SEC_API_KEY=${SEC_API_KEY:-development}                                                                                                                      
        - PROMETHEUS_MULTIPROC_DIR=/app/metrics                                                                                                           
     healthcheck:                                                                                                                                        
        test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]                                                                             
@@ -36,21 +35,6 @@ services:
        start_period: 30s                                                                                                                                 
     volumes:                                                                                                                                            
        - ./metrics:/app/metrics                                                                                                                          
-    depends_on:                                                                                                                                         
-       kafka:                                                                                                                                            
-         condition: service_healthy
-  kafka:                                                                                                                                                
-     image: confluentinc/cp-kafka:7.4.0                                                                                                                  
-     healthcheck:                                                                                                                                        
-       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]                                                                
-       interval: 10s                                                                                                                                     
-       timeout: 5s                                                                                                                                       
-       retries: 5                                                                                                                                        
-     environment:                                                                                                                                        
-       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1                                                                                                         
-       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0                                                                                                         
-     ports:                                                                                                                                              
-       - "9092:9092"    
 
   semantic-search-agent:
     build: agents/semantic_search_agent

@@ -4,14 +4,25 @@ import os
 from clients.sec_client import SECClient                                                                                                                
 from clients.yfinance_client import YFinanceClient                                                                                                      
 from schemas.stock import StockDataSchema                                                                                                               
+from fastapi.middleware.cors import CORSMiddleware
                                                                                                                                                         
-app = FastAPI()                                                                                                                                         
-sec_client = SECClient(api_key=os.getenv("SEC_API_KEY"))                                                                                                
+app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development - restrict this in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+                                                                                                                                                        
+sec_client = SECClient(api_key=os.getenv("SEC_API_KEY", ""))                                                                                                
 yfinance_client = YFinanceClient()                                                                                                                      
                                                                                                                                                         
 @app.get("/health")                                                                                                                                     
 def health():                                                                                                                                           
-    return {"status": "ok"}                                                                                                                             
+    return {"status": "ok", "dependencies": {"sec_api": "ok", "yfinance": "ok"}}                                                                                                                             
                                                                                                                                                         
 @app.get("/ingest/sec/{ticker}")                                                                                                                        
 def ingest_sec(ticker: str):                                                                                                                            
