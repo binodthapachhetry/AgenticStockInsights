@@ -1,9 +1,5 @@
 # Market Intelligence Platform
 
-![Python CI](https://github.com/<owner>/<repo>/actions/workflows/python-ci.yml/badge.svg)
-![Docker Build](https://github.com/<owner>/<repo>/actions/workflows/docker-publish.yml/badge.svg)
-![License: Apache-2.0](https://img.shields.io/github/license/<owner>/<repo>)
-
 ## Table of Contents
 - [Overview](#overview)
 - [Architecture](#architecture)
